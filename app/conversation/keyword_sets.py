@@ -2,7 +2,7 @@
 
 POSITIVE_KEYWORDS = {
     "perfect", "great", "good", "awesome", "nice", "amazing",
-    "excellent", "cool", "lovelove it", "", "fantastic", "wonderful",
+    "excellent", "love it", "cool", "love", "fantastic", "wonderful",
     "thanks", "thank you", "appreciate"
 }
 
