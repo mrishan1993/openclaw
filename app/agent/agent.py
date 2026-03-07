@@ -35,18 +35,23 @@ class Agent:
         try:
             with httpx.Client(timeout=30.0) as client:
                 response = client.post(
-                    "https://api.openclaw.ai/v1/chat/completions",
+                    "https://api.openai.com/v1/chat/completions",
                     headers={
                         "Authorization": f"Bearer {settings.openclaw_api_key}",
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "claude-3-5-sonnet-20241022",
+                        "model": "gpt-4o",
                         "messages": messages,
-                        "tools": self.tools,
+                        "tools": [
+                            {"type": "function", "function": tool}
+                            for tool in self.tools
+                        ],
                         "max_tokens": 1000,
                     },
                 )
+                if response.status_code != 200:
+                    logger.error(f"OpenAI API response body: {response.text}")
                 response.raise_for_status()
                 return response.json()
         except httpx.TimeoutException:
