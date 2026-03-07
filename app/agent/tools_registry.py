@@ -9,10 +9,13 @@ TOOLS_REGISTRY: Dict[str, Callable] = {
     "get_all_tasks": task_tools.get_all_tasks,
     "delete_task": task_tools.delete_task,
     "complete_task": task_tools.complete_task,
+    "delete_all_tasks": task_tools.delete_all_tasks,
     "save_note": note_tools.save_note,
     "search_notes": note_tools.search_notes,
     "get_recent_notes": note_tools.get_recent_notes,
     "get_all_notes": note_tools.get_all_notes,
+    "delete_note": note_tools.delete_note,
+    "delete_all_notes": note_tools.delete_all_notes,
 }
 
 
@@ -117,6 +120,27 @@ TOOL_DESCRIPTIONS = {
             },
             "required": ["task_id"],
         },
+    },
+    "delete_note": {
+        "name": "delete_note",
+        "description": "Delete a note by ID. Use when user wants to delete a note.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "note_id": {"type": "integer", "description": "The note ID to delete"},
+            },
+            "required": ["note_id"],
+        },
+    },
+    "delete_all_tasks": {
+        "name": "delete_all_tasks",
+        "description": "Delete all tasks. Use when user wants to delete all tasks.",
+        "parameters": {"type": "object", "properties": {}},
+    },
+    "delete_all_notes": {
+        "name": "delete_all_notes",
+        "description": "Delete all notes. Use when user wants to delete all notes.",
+        "parameters": {"type": "object", "properties": {}},
     },
 }
 

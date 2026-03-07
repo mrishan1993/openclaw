@@ -78,5 +78,12 @@ class TaskService:
                 return True
             return False
 
+    def delete_all_tasks(self) -> int:
+        """Delete all tasks."""
+        with get_db_session() as session:
+            count = session.query(Task).delete()
+            session.flush()
+            return count
+
 
 task_service = TaskService()

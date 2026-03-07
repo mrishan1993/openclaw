@@ -45,5 +45,22 @@ class NoteService:
             note = session.query(Note).filter(Note.id == note_id).first()
             return note.to_dict() if note else None
 
+    def delete_note(self, note_id: int) -> bool:
+        """Delete a note by ID."""
+        with get_db_session() as session:
+            note = session.query(Note).filter(Note.id == note_id).first()
+            if note:
+                session.delete(note)
+                session.flush()
+                return True
+            return False
+
+    def delete_all_notes(self) -> int:
+        """Delete all notes."""
+        with get_db_session() as session:
+            count = session.query(Note).delete()
+            session.flush()
+            return count
+
 
 note_service = NoteService()

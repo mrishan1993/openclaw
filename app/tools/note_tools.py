@@ -67,3 +67,38 @@ def get_all_notes(limit: int = 50) -> Dict[str, Any]:
             "success": False,
             "message": f"Failed to get notes: {str(e)}",
         }
+
+
+def delete_note(note_id: int) -> Dict[str, Any]:
+    """Delete a note by ID."""
+    try:
+        result = note_service.delete_note(note_id)
+        if result:
+            return {
+                "success": True,
+                "message": "Note deleted",
+            }
+        return {
+            "success": False,
+            "message": "Note not found",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Failed to delete note: {str(e)}",
+        }
+
+
+def delete_all_notes() -> Dict[str, Any]:
+    """Delete all notes."""
+    try:
+        count = note_service.delete_all_notes()
+        return {
+            "success": True,
+            "message": f"Deleted {count} notes",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Failed to delete notes: {str(e)}",
+        }

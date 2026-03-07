@@ -90,3 +90,18 @@ def complete_task(task_id: int) -> Dict[str, Any]:
             "success": False,
             "message": f"Failed to complete task: {str(e)}",
         }
+
+
+def delete_all_tasks() -> Dict[str, Any]:
+    """Delete all tasks."""
+    try:
+        count = task_service.delete_all_tasks()
+        return {
+            "success": True,
+            "message": f"Deleted {count} tasks",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Failed to delete tasks: {str(e)}",
+        }

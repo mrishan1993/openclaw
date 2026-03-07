@@ -146,6 +146,12 @@ class Agent:
                 responses.append(result.get("message", "Task deleted."))
             elif tool_name == "complete_task":
                 responses.append(result.get("message", "Task completed!"))
+            elif tool_name == "delete_note":
+                responses.append(result.get("message", "Note deleted."))
+            elif tool_name == "delete_all_tasks":
+                responses.append(result.get("message", "All tasks deleted."))
+            elif tool_name == "delete_all_notes":
+                responses.append(result.get("message", "All notes deleted."))
             else:
                 responses.append("Done.")
 
@@ -193,6 +199,13 @@ class Agent:
             result = execute_tool("get_all_notes")
             return format_note_response(result.get("notes", []))
 
+        if "delete note" in msg:
+            match = re.search(r"delete note (\d+)", msg)
+            if match:
+                note_id = int(match.group(1))
+                result = execute_tool("delete_note", note_id=note_id)
+                return result.get("message", "Note deleted.")
+
         if "what ideas do i have about" in msg or "search my notes for" in msg:
             query = msg.replace("what ideas do i have about ", "").replace("search my notes for ", "").strip()
             query = query.rstrip("?")
@@ -206,6 +219,14 @@ class Agent:
                 due_time = match.group(2).strip()
                 result = execute_tool("save_task", title=title, due_time=due_time)
                 return "Added to tasks with reminder."
+
+        if "delete all tasks" in msg:
+            result = execute_tool("delete_all_tasks")
+            return result.get("message", "All tasks deleted.")
+
+        if "delete all notes" in msg:
+            result = execute_tool("delete_all_notes")
+            return result.get("message", "All notes deleted.")
 
         return "I understand. Try commands like:\n• Add [task] to my tasks\n• Note: [idea]\n• What are my tasks today?\n• Show all tasks\n• Show all notes"
 

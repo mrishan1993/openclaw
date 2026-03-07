@@ -62,8 +62,9 @@ def format_note_response(notes: list) -> str:
 
     response = "Your notes:\n"
     for note in notes:
-        response += f"• {note['content'][:100]}"
-        if len(note["content"]) > 100:
-            response += "..."
-        response += "\n"
+        content = note['content'][:80]
+        if len(note["content"]) > 80:
+            content += "..."
+        response += f"• [{note['id']}] {content}\n"
+    response += "\nTo delete: Delete note [id]"
     return response.strip()
