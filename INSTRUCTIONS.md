@@ -1,7 +1,7 @@
 # WhatsApp Personal Assistant - Instructions
 
 ## Overview
-Your personal AI assistant that manages tasks and notes via WhatsApp.
+Your personal AI assistant that manages tasks, notes, and calendar via WhatsApp.
 
 ---
 
@@ -28,6 +28,20 @@ Your personal AI assistant that manages tasks and notes via WhatsApp.
 | `Show all notes` | View all notes with IDs |
 | `Delete note [id]` | Delete a specific note by ID |
 | `Delete all notes` | Delete all notes |
+
+### Calendar (Google Calendar)
+
+| Command | Description |
+|---------|-------------|
+| `Schedule meeting with [name] tomorrow at 3pm` | Create a calendar event |
+| `Create all day event called [title] on Saturday` | Create all-day event |
+| `What's on my calendar today?` | View today's events |
+| `Show my meetings tomorrow` | View tomorrow's events |
+| `What events do I have this week?` | View this week's events |
+| `Am I free tomorrow at 4pm?` | Check availability |
+| `Find a 30 minute slot tomorrow` | Find available slots |
+| `When is my next meeting with [name]?` | Search events |
+| `Cancel my meeting with [name]` | Delete an event |
 
 ### Search
 

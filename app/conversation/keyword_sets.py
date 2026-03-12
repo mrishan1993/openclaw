@@ -114,3 +114,19 @@ NEGATIVE_KEYWORDS = {
     # emoji style
     "👎"
 }
+
+
+GREETING_KEYWORDS = {
+    # basic
+    "hi", "hello", "hey", "heya", "howdy",
+    
+    # questions
+    "whats up", "what's up", "how are you", 
+    "how r u", "how are u", "how's it going",
+    
+    # time of day
+    "good morning", "good afternoon", "good evening",
+    
+    # short
+    "sup", "yo",
+}

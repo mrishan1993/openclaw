@@ -28,6 +28,15 @@ NEGATIVE_RESPONSES = [
     "I apologize. What can I help you with?",
 ]
 
+GREETING_RESPONSES = [
+    "Hello! How can I help you today?",
+    "Hi there! What's on your mind?",
+    "Hey! What would you like me to do?",
+    "Greetings! How can I assist you?",
+    "Hello! Ready when you are.",
+    "Hi! Need help with anything?",
+]
+
 
 def get_response(category: str) -> str:
     """Get a random response for the given category."""
@@ -37,4 +46,6 @@ def get_response(category: str) -> str:
         return choice(NEUTRAL_RESPONSES)
     elif category == "negative":
         return choice(NEGATIVE_RESPONSES)
+    elif category == "greeting":
+        return choice(GREETING_RESPONSES)
     return "Got it."

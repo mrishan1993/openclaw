@@ -1,6 +1,7 @@
 """Tools registry for the AI agent."""
 from typing import Dict, Any, Callable, List
 from app.tools import task_tools, note_tools
+from app.calendar import calendar_tools
 
 
 TOOLS_REGISTRY: Dict[str, Callable] = {
@@ -16,6 +17,24 @@ TOOLS_REGISTRY: Dict[str, Callable] = {
     "get_all_notes": note_tools.get_all_notes,
     "delete_note": note_tools.delete_note,
     "delete_all_notes": note_tools.delete_all_notes,
+    "create_event": calendar_tools.create_event,
+    "create_all_day_event": calendar_tools.create_all_day_event,
+    "create_recurring_event": calendar_tools.create_recurring_event,
+    "list_today_events": calendar_tools.list_today_events,
+    "list_tomorrow_events": calendar_tools.list_tomorrow_events,
+    "list_upcoming_events": calendar_tools.list_upcoming_events,
+    "list_events_by_date": calendar_tools.list_events_by_date,
+    "list_week_events": calendar_tools.list_week_events,
+    "get_event_details": calendar_tools.get_event_details,
+    "delete_event": calendar_tools.delete_event,
+    "search_events": calendar_tools.search_events,
+    "check_availability": calendar_tools.check_availability,
+    "find_free_slots": calendar_tools.find_free_slots,
+    "reschedule_event": calendar_tools.reschedule_event,
+    "change_event_title": calendar_tools.change_event_title,
+    "add_event_attendee": calendar_tools.add_event_attendee,
+    "remove_event_attendee": calendar_tools.remove_event_attendee,
+    "check_specific_time": calendar_tools.check_specific_time,
 }
 
 
@@ -141,6 +160,203 @@ TOOL_DESCRIPTIONS = {
         "name": "delete_all_notes",
         "description": "Delete all notes. Use when user wants to delete all notes.",
         "parameters": {"type": "object", "properties": {}},
+    },
+    "create_event": {
+        "name": "create_event",
+        "description": "Create a new calendar event with specific time. Use when user wants to schedule a meeting or event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Event title or meeting name"},
+                "start_time": {"type": "string", "description": "Start time in ISO format"},
+                "end_time": {"type": "string", "description": "End time in ISO format"},
+                "description": {"type": "string", "description": "Optional event description"},
+                "location": {"type": "string", "description": "Optional location"},
+                "attendees": {"type": "string", "description": "Optional comma-separated list of attendee email addresses"},
+            },
+            "required": ["title", "start_time", "end_time"],
+        },
+    },
+    "create_all_day_event": {
+        "name": "create_all_day_event",
+        "description": "Create an all-day event. Use when user wants to create a day-long event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Event title"},
+                "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+                "description": {"type": "string", "description": "Optional description"},
+            },
+            "required": ["title", "date"],
+        },
+    },
+    "create_recurring_event": {
+        "name": "create_recurring_event",
+        "description": "Create a recurring event. Use for weekly meetings or daily standups.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "Event title"},
+                "start_time": {"type": "string", "description": "Start time in ISO format"},
+                "end_time": {"type": "string", "description": "End time in ISO format"},
+                "recurrence_rule": {"type": "string", "description": "RRULE format (e.g., 'FREQ=WEEKLY;BYDAY=MO')"},
+                "description": {"type": "string", "description": "Optional description"},
+                "location": {"type": "string", "description": "Optional location"},
+                "attendees": {"type": "string", "description": "Optional comma-separated list of attendee email addresses"},
+            },
+            "required": ["title", "start_time", "end_time", "recurrence_rule"],
+        },
+    },
+    "list_today_events": {
+        "name": "list_today_events",
+        "description": "Get today's calendar events. Use when user asks about today's schedule.",
+        "parameters": {"type": "object", "properties": {}},
+    },
+    "list_tomorrow_events": {
+        "name": "list_tomorrow_events",
+        "description": "Get tomorrow's calendar events.",
+        "parameters": {"type": "object", "properties": {}},
+    },
+    "list_upcoming_events": {
+        "name": "list_upcoming_events",
+        "description": "Get upcoming events. Use when user wants to see future meetings.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "max_results": {"type": "integer", "description": "Maximum number of events", "default": 10},
+            },
+        },
+    },
+    "list_events_by_date": {
+        "name": "list_events_by_date",
+        "description": "Get events for a specific date. Use when user asks about a specific day.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_str": {"type": "string", "description": "Date string (today, tomorrow, or date)"},
+            },
+            "required": ["date_str"],
+        },
+    },
+    "list_week_events": {
+        "name": "list_week_events",
+        "description": "Get this week's events.",
+        "parameters": {"type": "object", "properties": {}},
+    },
+    "get_event_details": {
+        "name": "get_event_details",
+        "description": "Get detailed information about a specific event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+            },
+            "required": ["event_id"],
+        },
+    },
+    "delete_event": {
+        "name": "delete_event",
+        "description": "Delete a calendar event. Use when user wants to cancel or remove an event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID to delete"},
+            },
+            "required": ["event_id"],
+        },
+    },
+    "search_events": {
+        "name": "search_events",
+        "description": "Search calendar events by keyword. Use when user wants to find specific meetings.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search query"},
+            },
+            "required": ["query"],
+        },
+    },
+    "check_availability": {
+        "name": "check_availability",
+        "description": "Check if user is free on a given day.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_str": {"type": "string", "description": "Date to check (today or tomorrow)", "default": "today"},
+            },
+        },
+    },
+    "find_free_slots": {
+        "name": "find_free_slots",
+        "description": "Find available time slots for scheduling. Use when user wants to find meeting times.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date_str": {"type": "string", "description": "Date to search (today or tomorrow)", "default": "tomorrow"},
+                "duration_minutes": {"type": "integer", "description": "Meeting duration in minutes", "default": 30},
+            },
+        },
+    },
+    "reschedule_event": {
+        "name": "reschedule_event",
+        "description": "Change the time of an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "new_start": {"type": "string", "description": "New start time in ISO format"},
+                "new_end": {"type": "string", "description": "New end time in ISO format"},
+            },
+            "required": ["event_id", "new_start", "new_end"],
+        },
+    },
+    "change_event_title": {
+        "name": "change_event_title",
+        "description": "Rename an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "new_title": {"type": "string", "description": "New event title"},
+            },
+            "required": ["event_id", "new_title"],
+        },
+    },
+    "add_event_attendee": {
+        "name": "add_event_attendee",
+        "description": "Add an attendee to an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "email": {"type": "string", "description": "Attendee email address"},
+            },
+            "required": ["event_id", "email"],
+        },
+    },
+    "remove_event_attendee": {
+        "name": "remove_event_attendee",
+        "description": "Remove an attendee from an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "email": {"type": "string", "description": "Attendee email address to remove"},
+            },
+            "required": ["event_id", "email"],
+        },
+    },
+    "check_specific_time": {
+        "name": "check_specific_time",
+        "description": "Check if a specific time slot is free.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time_min": {"type": "string", "description": "Start time in ISO format"},
+                "time_max": {"type": "string", "description": "End time in ISO format"},
+            },
+            "required": ["time_min", "time_max"],
+        },
     },
 }
 

@@ -6,6 +6,12 @@ from app.config import get_settings
 from app.agent.agent import agent
 from app.whatsapp.client import whatsapp_client
 from app.conversation.fallback_handler import handle_fallback
+from app.services.conversation_service import (
+    get_conversation_context, 
+    update_conversation_context,
+    add_message_to_history,
+    clear_conversation_context
+)
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -82,12 +88,17 @@ async def process_message(message: Dict[str, Any]):
 
     logger.info(f"Processing authorized message: {message_text}")
 
-    fallback_response = handle_fallback(message_text)
+    context = get_conversation_context(from_number)
+    add_message_to_history(from_number, "user", message_text)
+
+    fallback_response = handle_fallback(message_text, context)
     if fallback_response:
         logger.info(f"Fallback response: {fallback_response}")
         whatsapp_client.send_message(from_number, fallback_response)
+        add_message_to_history(from_number, "assistant", fallback_response)
         return
 
-    response = agent.process_message(message_text)
+    response = agent.process_message(message_text, context=context)
 
     whatsapp_client.send_message(from_number, response)
+    add_message_to_history(from_number, "assistant", response)

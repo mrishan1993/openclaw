@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./whatsapp_assistant.db"
     digest_time: str = "08:00"
     log_level: str = "INFO"
+    
+    # Google Calendar
+    google_access_token: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
 
     class Config:
         env_file = ".env"
