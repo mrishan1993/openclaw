@@ -124,7 +124,7 @@ class CalendarClient:
 
     def list_events(self, max_results: int = 10, time_min: str = None, time_max: str = None) -> Dict[str, Any]:
         """List upcoming events."""
-        params = f"maxResults={max_results}"
+        params = f"maxResults={max_results}&singleEvents=true&orderBy=startTime"
         if time_min:
             params += f"&timeMin={urllib.parse.quote(time_min, safe='')}"
         if time_max:

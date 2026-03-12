@@ -15,11 +15,19 @@ def format_events_list(events: List[Dict[str, Any]]) -> str:
 
         if "dateTime" in start:
             dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
+            if dt.tzinfo:
+                from datetime import timezone, timedelta
+                ist = timezone(timedelta(hours=5, minutes=30))
+                dt = dt.astimezone(ist)
             time_str = dt.strftime("%I:%M %p")
             date_str = dt.strftime("%b %d")
             response += f"• {date_str} at {time_str} - {summary}\n"
         elif "date" in start:
-            date_str = start["date"]
+            try:
+                dt = datetime.fromisoformat(start["date"])
+                date_str = dt.strftime("%b %d")
+            except ValueError:
+                date_str = start["date"]
             response += f"• {date_str} (All day) - {summary}\n"
 
     return response.strip()
@@ -36,6 +44,14 @@ def format_event_details(event: Dict[str, Any]) -> str:
     if "dateTime" in start:
         start_dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
         end_dt = datetime.fromisoformat(end["dateTime"].replace("Z", "+00:00"))
+        
+        from datetime import timezone, timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        if start_dt.tzinfo:
+            start_dt = start_dt.astimezone(ist)
+        if end_dt.tzinfo:
+            end_dt = end_dt.astimezone(ist)
+            
         time_str = f"{start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
     elif "date" in start:
         time_str = "All day event"
@@ -67,13 +83,26 @@ def format_availability(busy_slots: List[Dict]) -> str:
 
     response = "You are busy at:\n"
     for slot in busy_slots[:5]:
-        start = slot.get("start", {})
-        end = slot.get("end", {})
+        start = slot.get("start")
+        end = slot.get("end")
 
-        if "dateTime" in start:
+        if isinstance(start, str):
+            start_dt = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(end.replace("Z", "+00:00"))
+        elif isinstance(start, dict) and "dateTime" in start:
             start_dt = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
             end_dt = datetime.fromisoformat(end["dateTime"].replace("Z", "+00:00"))
-            response += f"• {start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}\n"
+        else:
+            continue
+            
+        from datetime import timezone, timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        if start_dt.tzinfo:
+            start_dt = start_dt.astimezone(ist)
+        if end_dt.tzinfo:
+            end_dt = end_dt.astimezone(ist)
+            
+        response += f"• {start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}\n"
 
     return response.strip()
 
@@ -96,6 +125,14 @@ def format_free_slots(slots: List[Dict]) -> str:
             end_dt = datetime.fromisoformat(end["dateTime"].replace("Z", "+00:00"))
         else:
             continue
+            
+        from datetime import timezone, timedelta
+        ist = timezone(timedelta(hours=5, minutes=30))
+        if start_dt.tzinfo:
+            start_dt = start_dt.astimezone(ist)
+        if end_dt.tzinfo:
+            end_dt = end_dt.astimezone(ist)
+            
         response += f"• {start_dt.strftime('%I:%M %p')} - {end_dt.strftime('%I:%M %p')}\n"
 
     return response.strip()

@@ -127,7 +127,7 @@ def list_today_events(phone_number: Optional[str] = None) -> Dict[str, Any]:
     try:
         client = _get_calendar_client(phone_number)
         now = datetime.now()
-        time_min = now.isoformat() + "+05:30"
+        time_min = datetime.combine(now.date(), datetime.min.time()).isoformat() + "+05:30"
         time_max = datetime.combine(now.date(), datetime.max.time()).isoformat() + "+05:30"
         result = client.list_events(max_results=20, time_min=time_min, time_max=time_max)
         
@@ -151,7 +151,7 @@ def list_tomorrow_events(phone_number: Optional[str] = None) -> Dict[str, Any]:
         client = _get_calendar_client(phone_number)
         now = datetime.now()
         tomorrow = now + timedelta(days=1)
-        time_min = tomorrow.isoformat() + "+05:30"
+        time_min = datetime.combine(tomorrow.date(), datetime.min.time()).isoformat() + "+05:30"
         time_max = datetime.combine(tomorrow.date(), datetime.max.time()).isoformat() + "+05:30"
         
         result = client.list_events(max_results=20, time_min=time_min, time_max=time_max)
@@ -211,14 +211,51 @@ def get_event_details(event_id: str, phone_number: Optional[str] = None) -> Dict
         return {"success": False, "message": f"Failed to get event: {str(e)}"}
 
 
-def delete_event(event_id: str, phone_number: Optional[str] = None) -> Dict[str, Any]:
-    """Delete an event."""
+def delete_event(
+    query: Optional[str] = None, 
+    event_id: Optional[str] = None, 
+    phone_number: Optional[str] = None
+) -> Dict[str, Any]:
+    """Delete an event by ID or by searching for a match."""
     try:
         client = _get_calendar_client(phone_number)
-        logger.info(f"[CALENDAR] delete_event - event_id: {event_id}")
-        result = client.delete_event(event_id)
-        logger.info(f"[CALENDAR] delete_event result: {result.get('success')}")
-        return result
+        
+        # If event_id is provided, delete it directly
+        if event_id:
+            logger.info(f"[CALENDAR] delete_event - event_id: {event_id}")
+            del_result = client.delete_event(event_id)
+            if del_result.get("success"):
+                return {"success": True, "message": "Successfully cancelled the meeting."}
+            return del_result
+
+        # Otherwise, use query to search
+        if not query:
+            return {"success": False, "message": "Please provide either an event ID or a search query to cancel."}
+
+        logger.info(f"[CALENDAR] delete_event - query: {query}")
+        result = client.search_events(query)
+        if not result.get("success"):
+            return result
+            
+        events = result.get("events", [])
+        if not events:
+            return {"success": False, "message": f"Could not find any events matching '{query}' to cancel."}
+            
+        if len(events) == 1:
+            event = events[0]
+            event_id = event["id"]
+            summary = event.get("summary", "Untitled")
+            
+            del_result = client.delete_event(event_id)
+            if del_result.get("success"):
+                return {"success": True, "message": f"Successfully cancelled: {summary}"}
+            return del_result
+            
+        from app.calendar.calendar_formatter import format_events_list
+        return {
+            "success": False,
+            "message": f"Found multiple events matching '{query}'. Please be more specific (e.g. state the time or exact date):\n\n" + format_events_list(events)
+        }
     except ValueError:
         return _handle_no_token(phone_number)
     except Exception as e:
@@ -280,21 +317,25 @@ def check_availability(date_str: str = "today", phone_number: Optional[str] = No
         return {"success": False, "message": f"Failed to check availability: {str(e)}"}
 
 
-def find_free_slots(date_str: str = "tomorrow", duration_minutes: int = 30, phone_number: Optional[str] = None) -> Dict[str, Any]:
+def find_free_slots(time_min_str: str, time_max_str: str, duration_minutes: int = 30, phone_number: Optional[str] = None) -> Dict[str, Any]:
     """Find available time slots."""
     try:
         client = _get_calendar_client(phone_number)
-        now = datetime.now()
         
-        if date_str == "today":
-            target = now.date()
-        elif date_str == "tomorrow":
-            target = (now + timedelta(days=1)).date()
-        else:
-            target = (now + timedelta(days=1)).date()
-
-        time_min = datetime.combine(target, datetime.min.time()).isoformat() + "+05:30"
-        time_max = datetime.combine(target, datetime.max.time()).isoformat() + "+05:30"
+        # Parse inputs expecting ISO formatted strings
+        time_min_dt = datetime.fromisoformat(time_min_str.replace("Z", "+00:00"))
+        time_max_dt = datetime.fromisoformat(time_max_str.replace("Z", "+00:00"))
+        
+        from datetime import timezone
+        ist = timezone(timedelta(hours=5, minutes=30))
+        
+        if time_min_dt.tzinfo is None:
+            time_min_dt = time_min_dt.replace(tzinfo=ist)
+        if time_max_dt.tzinfo is None:
+            time_max_dt = time_max_dt.replace(tzinfo=ist)
+            
+        time_min = time_min_dt.isoformat()
+        time_max = time_max_dt.isoformat()
 
         result = client.check_free_busy(time_min, time_max)
         
@@ -307,14 +348,28 @@ def find_free_slots(date_str: str = "tomorrow", duration_minutes: int = 30, phon
         busy = primary.get("busy", [])
 
         free_slots = []
-        current_time = datetime.combine(target, datetime.min.time())
-        end_of_day = datetime.combine(target, datetime.max.time().replace(hour=23, minute=59))
+        
+        current_time = time_min_dt
+        end_of_search = time_max_dt
 
-        busy_sorted = sorted(busy, key=lambda x: x.get("start", {}).get("dateTime", ""))
+        busy_sorted = sorted(busy, key=lambda x: x.get("start", "") if isinstance(x.get("start"), str) else x.get("start", {}).get("dateTime", ""))
         
         for slot in busy_sorted:
-            slot_start = datetime.fromisoformat(slot["start"]["dateTime"].replace("Z", "+00:00").replace("+05:30", ""))
-            slot_end = datetime.fromisoformat(slot["end"]["dateTime"].replace("Z", "+00:00").replace("+05:30", ""))
+            start_val = slot.get("start", "")
+            if isinstance(start_val, dict):
+                start_val = start_val.get("dateTime", start_val.get("date", ""))
+                
+            end_val = slot.get("end", "")
+            if isinstance(end_val, dict):
+                end_val = end_val.get("dateTime", end_val.get("date", ""))
+                
+            slot_start = datetime.fromisoformat(start_val.replace("Z", "+00:00"))
+            slot_end = datetime.fromisoformat(end_val.replace("Z", "+00:00"))
+            
+            if slot_start.tzinfo is None:
+                slot_start = slot_start.replace(tzinfo=ist)
+            if slot_end.tzinfo is None:
+                slot_end = slot_end.replace(tzinfo=ist)
             
             while current_time + timedelta(minutes=duration_minutes) <= slot_start:
                 free_slots.append({
@@ -325,7 +380,7 @@ def find_free_slots(date_str: str = "tomorrow", duration_minutes: int = 30, phon
             
             current_time = max(current_time, slot_end)
 
-        while current_time + timedelta(minutes=duration_minutes) <= end_of_day:
+        while current_time + timedelta(minutes=duration_minutes) <= end_of_search:
             free_slots.append({
                 "start": current_time.isoformat(),
                 "end": (current_time + timedelta(minutes=duration_minutes)).isoformat()
@@ -449,7 +504,12 @@ def list_events_by_date(date_str: str, phone_number: Optional[str] = None) -> Di
         elif date_str == "tomorrow":
             target = (now + timedelta(days=1)).date()
         else:
-            target = (now + timedelta(days=1)).date()
+            try:
+                # Try to parse ISO date string (YYYY-MM-DD or full timestamp)
+                target = datetime.fromisoformat(date_str[:10]).date()
+            except ValueError:
+                # Fallback to tomorrow
+                target = (now + timedelta(days=1)).date()
 
         time_min = datetime.combine(target, datetime.min.time()).isoformat() + "+05:30"
         time_max = datetime.combine(target, datetime.max.time()).isoformat() + "+05:30"
@@ -475,9 +535,12 @@ def list_week_events(phone_number: Optional[str] = None) -> Dict[str, Any]:
     try:
         client = _get_calendar_client(phone_number)
         now = datetime.now()
-        time_min = now.isoformat() + "+05:30"
+        time_min = datetime.combine(now.date(), datetime.min.time()).isoformat() + "+05:30"
         
-        result = client.list_events(max_results=50, time_min=time_min)
+        week_end = now + timedelta(days=7)
+        time_max = datetime.combine(week_end.date(), datetime.max.time()).isoformat() + "+05:30"
+        
+        result = client.list_events(max_results=50, time_min=time_min, time_max=time_max)
         
         if result.get("success"):
             events = result.get("events", [])

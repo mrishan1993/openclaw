@@ -124,9 +124,10 @@ class Agent:
                     return content
 
         tool_results = []
+        phone_number = context.phone_number if context else None
         for call in tool_calls:
             logger.info(f"Executing tool: {call['name']}")
-            result = execute_tool(call["name"], **call["arguments"])
+            result = execute_tool(call["name"], phone_number=phone_number, **call["arguments"])
             tool_results.append(result)
 
         return self._format_response(tool_results, tool_calls)

@@ -260,9 +260,9 @@ TOOL_DESCRIPTIONS = {
         "parameters": {
             "type": "object",
             "properties": {
-                "event_id": {"type": "string", "description": "The event ID to delete"},
+                "query": {"type": "string", "description": "Search string to match the event to cancel, including title, date, or time."},
             },
-            "required": ["event_id"],
+            "required": ["query"],
         },
     },
     "search_events": {
@@ -288,13 +288,15 @@ TOOL_DESCRIPTIONS = {
     },
     "find_free_slots": {
         "name": "find_free_slots",
-        "description": "Find available time slots for scheduling. Use when user wants to find meeting times.",
+        "description": "Find available time slots for scheduling between two explicit times.",
         "parameters": {
             "type": "object",
             "properties": {
-                "date_str": {"type": "string", "description": "Date to search (today or tomorrow)", "default": "tomorrow"},
+                "time_min_str": {"type": "string", "description": "Lower bound time in ISO format (e.g. 2026-03-12T09:00:00+05:30)"},
+                "time_max_str": {"type": "string", "description": "Upper bound time in ISO format (e.g. 2026-03-12T17:00:00+05:30)"},
                 "duration_minutes": {"type": "integer", "description": "Meeting duration in minutes", "default": 30},
             },
+            "required": ["time_min_str", "time_max_str"],
         },
     },
     "reschedule_event": {
@@ -371,12 +373,20 @@ def get_all_tools() -> List[Dict[str, Any]]:
     return list(TOOL_DESCRIPTIONS.values())
 
 
-def execute_tool(name: str, **kwargs) -> Dict[str, Any]:
+def execute_tool(name: str, phone_number: Optional[str] = None, **kwargs) -> Dict[str, Any]:
     """Execute a tool by name with given arguments."""
     tool = get_tool(name)
     if not tool:
         return {"success": False, "message": f"Tool '{name}' not found"}
+    
+    # Check if tool accepts phone_number
+    import inspect
+    sig = inspect.signature(tool)
+    if "phone_number" in sig.parameters:
+        kwargs["phone_number"] = phone_number
+        
     try:
         return tool(**kwargs)
     except Exception as e:
+        logger.error(f"Error executing tool {name}: {str(e)}")
         return {"success": False, "message": str(e)}
