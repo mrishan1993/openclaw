@@ -1,5 +1,5 @@
 """Tools registry for the AI agent."""
-from typing import Dict, Any, Callable, List
+from typing import Dict, Any, Callable, List, Optional
 from app.tools import task_tools, note_tools
 from app.calendar import calendar_tools
 
@@ -34,7 +34,16 @@ TOOLS_REGISTRY: Dict[str, Callable] = {
     "change_event_title": calendar_tools.change_event_title,
     "add_event_attendee": calendar_tools.add_event_attendee,
     "remove_event_attendee": calendar_tools.remove_event_attendee,
+    "list_event_attendees": calendar_tools.list_event_attendees,
     "check_specific_time": calendar_tools.check_specific_time,
+    "cancel_recurring_instance": calendar_tools.cancel_recurring_instance,
+    "cancel_recurring_series": calendar_tools.cancel_recurring_series,
+    "get_meeting_link": calendar_tools.get_meeting_link,
+    "add_meeting_link": calendar_tools.add_meeting_link,
+    "add_reminder": calendar_tools.add_reminder,
+    "update_reminder": calendar_tools.update_reminder,
+    "remove_reminder": calendar_tools.remove_reminder,
+    "get_daily_agenda": calendar_tools.get_daily_agenda,
 }
 
 
@@ -348,6 +357,17 @@ TOOL_DESCRIPTIONS = {
             "required": ["event_id", "email"],
         },
     },
+    "list_event_attendees": {
+        "name": "list_event_attendees",
+        "description": "List all attendees for an existing event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+            },
+            "required": ["event_id"],
+        },
+    },
     "check_specific_time": {
         "name": "check_specific_time",
         "description": "Check if a specific time slot is free.",
@@ -359,6 +379,122 @@ TOOL_DESCRIPTIONS = {
             },
             "required": ["time_min", "time_max"],
         },
+    },
+    "cancel_recurring_instance": {
+        "name": "cancel_recurring_instance",
+        "description": "Cancel a single occurrence of a recurring meeting given its instance event ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "Instance event ID to cancel"},
+            },
+            "required": ["event_id"],
+        },
+    },
+    "cancel_recurring_series": {
+        "name": "cancel_recurring_series",
+        "description": "Cancel an entire recurring meeting series given any instance or the master event ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "Event ID belonging to the series"},
+            },
+            "required": ["event_id"],
+        },
+    },
+    "get_meeting_link": {
+        "name": "get_meeting_link",
+        "description": "Get the primary meeting link for an event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+            },
+            "required": ["event_id"],
+        },
+    },
+    "add_meeting_link": {
+        "name": "add_meeting_link",
+        "description": "Attach a meeting link (Google Meet, Zoom, Teams, or custom URL) to an event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "platform": {
+                    "type": "string",
+                    "description": "Platform name (google_meet, zoom, teams, custom)",
+                    "default": "google_meet",
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Meeting URL (required for non-Google Meet platforms)",
+                },
+            },
+            "required": ["event_id"],
+        },
+    },
+    "add_reminder": {
+        "name": "add_reminder",
+        "description": "Add a reminder before a meeting.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "minutes_before": {
+                    "type": "integer",
+                    "description": "Minutes before event start to trigger the reminder",
+                },
+                "method": {
+                    "type": "string",
+                    "description": "Reminder method (popup, email, sms)",
+                    "default": "popup",
+                },
+            },
+            "required": ["event_id", "minutes_before"],
+        },
+    },
+    "update_reminder": {
+        "name": "update_reminder",
+        "description": "Update an existing reminder for an event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "index": {
+                    "type": "integer",
+                    "description": "Zero-based index of the reminder to update",
+                },
+                "minutes_before": {
+                    "type": "integer",
+                    "description": "New minutes before event start",
+                },
+                "method": {
+                    "type": "string",
+                    "description": "Optional new reminder method",
+                },
+            },
+            "required": ["event_id", "index", "minutes_before"],
+        },
+    },
+    "remove_reminder": {
+        "name": "remove_reminder",
+        "description": "Remove one or all reminders from an event.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The event ID"},
+                "index": {
+                    "type": ["integer", "null"],
+                    "description": "Zero-based index of the reminder to remove; omit to remove all",
+                },
+            },
+            "required": ["event_id"],
+        },
+    },
+    "get_daily_agenda": {
+        "name": "get_daily_agenda",
+        "description": "Get a formatted agenda for today's schedule, including overlapping events and all-day events.",
+        "parameters": {"type": "object", "properties": {}},
     },
 }
 

@@ -247,7 +247,14 @@ class Agent:
                 return result.get("message", "No events found.")
             
             elif action == "delete_event" or action == "delete_by_time":
-                return "Please specify the event ID to delete."
+                query = calendar_action.get("query")
+                if not query and action == "delete_by_time":
+                    query = calendar_action.get("time")
+                
+                if query:
+                    result = calendar_tools.delete_event(query=query)
+                    return result.get("message", "Could not cancel event.")
+                return "Please specify the event details to delete (e.g., 'cancel my 2pm meeting')."
             
             elif action == "check_availability":
                 result = calendar_tools.check_availability()

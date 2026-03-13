@@ -169,22 +169,41 @@ class CalendarParser:
                 break
 
         if not date_obj:
-            if "this weekend" in time_str:
-                date_obj = CalendarParser.next_weekday(5)
-            elif "evening" in time_str or "night" in time_str:
-                for day_name, day_date in day_map.items():
-                    if day_name in time_str:
-                        date_obj = day_date
-                        break
+            # Try parsing patterns like "Mar 14" or "March 14"
+            month_match = re.search(r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})", time_str)
+            if month_match:
+                month_name = month_match.group(1)
+                day = int(month_match.group(2))
+                
+                months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+                month_idx = months.index(month_name) + 1
+                
+                # Check if year is in string
+                year_match = re.search(r"\b(20\d{2})\b", time_str)
+                year = int(year_match.group(1)) if year_match else now.year
+                
+                try:
+                    date_obj = datetime(year, month_idx, day).date()
+                    # If date is in the past and no year was specified, assume next year
+                    if not year_match and date_obj < now.date():
+                        date_obj = datetime(year + 1, month_idx, day).date()
+                except ValueError:
+                    pass
 
         if not date_obj:
             date_obj = now.date()
 
-        time_match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", time_str)
+        # Look for time: prioritize patterns with colons or AM/PM to avoid matching date numbers
+        time_match = re.search(r"(\d{1,2}):(\d{2})\s*(am|pm)?|(\d{1,2})\s*(am|pm)", time_str)
         if time_match:
-            hour = int(time_match.group(1))
-            minute = int(time_match.group(2)) if time_match.group(2) else 0
-            ampm = time_match.group(3)
+            if time_match.group(1): # Pattern with colon
+                hour = int(time_match.group(1))
+                minute = int(time_match.group(2))
+                ampm = time_match.group(3)
+            else: # Pattern with just AM/PM
+                hour = int(time_match.group(4))
+                minute = 0
+                ampm = time_match.group(5)
 
             if "evening" in time_str or "night" in time_str:
                 if hour < 12 and ampm != "am":
@@ -277,6 +296,21 @@ class CalendarParser:
         msg = message.lower()
 
         if "cancel" in msg or "delete" in msg:
+            # Check for "cancel this meeting: [details]" or "cancel [details]"
+            detail_patterns = [
+                r"cancel this meeting:\s*(.+)",
+                r"cancel the meeting:\s*(.+)",
+                r"cancel meeting:\s*(.+)",
+                r"cancel\s+(.+ meeting with .+)$",
+                r"cancel\s+(.+ interview with .+)$",
+            ]
+            
+            for pattern in detail_patterns:
+                match = re.search(pattern, message, re.IGNORECASE)
+                if match:
+                    query = match.group(1).strip()
+                    return {"action": "delete_event", "query": query}
+
             id_match = re.search(r"(\d+)", message)
             if id_match:
                 return {"action": "delete_event", "event_id": id_match.group(1)}
@@ -284,6 +318,11 @@ class CalendarParser:
             time_match = re.search(r"(?:at |on )?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)", msg)
             if time_match:
                 return {"action": "delete_by_time", "time": time_match.group(1)}
+            
+            # Default fallback for "cancel [something]"
+            match = re.search(r"(?:cancel|delete)\s+(.+)", message, re.IGNORECASE)
+            if match:
+                return {"action": "delete_event", "query": match.group(1).strip()}
 
         return None
 

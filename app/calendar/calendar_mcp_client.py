@@ -54,10 +54,22 @@ class CalendarClient:
                 else:
                     return {"success": False, "error": f"Unknown method: {method}"}
 
+                logger.info(f"API Response status: {response.status_code}, body: {response.text[:500] if response.text else 'empty'}")
+                
                 if response.status_code == 404:
                     return {"success": False, "error": "Not found", "status": 404}
                 
+                if response.status_code == 401:
+                    return {"success": False, "error": "Unauthorized - token may be expired", "status": 401}
+                
+                if response.status_code == 403:
+                    return {"success": False, "error": "Forbidden - check permissions", "status": 403}
+                
                 response.raise_for_status()
+                
+                if not response.text or response.status_code == 204:
+                    return {"success": True, "data": {}}
+                
                 return {"success": True, "data": response.json()}
         except httpx.HTTPStatusError as e:
             logger.error(f"Calendar API error: {e.response.status_code} - {e.response.text}")
@@ -167,9 +179,11 @@ class CalendarClient:
             return {"success": True, "message": "Event deleted"}
         return {"success": False, "message": f"Failed to delete event: {result.get('error')}"}
 
-    def search_events(self, query: str) -> Dict[str, Any]:
+    def search_events(self, query: str, time_min: Optional[str] = None) -> Dict[str, Any]:
         """Search events by query."""
         params = f"q={urllib.parse.quote(query, safe='')}&maxResults=10"
+        if time_min:
+            params += f"&timeMin={urllib.parse.quote(time_min, safe='')}"
         result = self._make_request("GET", f"/calendars/primary/events?{params}")
         if result.get("success"):
             events = result.get("data", {}).get("items", [])
@@ -264,6 +278,39 @@ class CalendarClient:
         """Change the title of an event."""
         updates = {"summary": new_title}
         return self.update_event(event_id, updates)
+
+    def update_event_reminders(
+        self,
+        event_id: str,
+        overrides: Optional[List[Dict[str, Any]]] = None,
+        use_default: bool = False,
+    ) -> Dict[str, Any]:
+        """Update reminder settings for an event."""
+        updates: Dict[str, Any] = {
+            "reminders": {
+                "useDefault": use_default,
+            }
+        }
+        if overrides is not None:
+            updates["reminders"]["overrides"] = overrides
+
+        return self.update_event(event_id, updates)
+
+    def patch_event_with_conference_data(self, event_id: str, conference_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Attach or update conferenceData for an event (e.g., Google Meet link)."""
+        data = {"conferenceData": conference_data}
+        result = self._make_request(
+            "PATCH",
+            f"/calendars/primary/events/{event_id}?conferenceDataVersion=1&sendUpdates=all",
+            data,
+        )
+        if result.get("success"):
+            return {
+                "success": True,
+                "message": "Event updated",
+                "event": result.get("data"),
+            }
+        return {"success": False, "message": f"Failed to update event: {result.get('error')}"}
 
 
 calendar_client = CalendarClient()

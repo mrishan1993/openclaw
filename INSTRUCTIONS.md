@@ -35,7 +35,18 @@ Your personal AI assistant that manages tasks, notes, and calendar via WhatsApp.
 |---------|-------------|
 | `Schedule meeting with [name] tomorrow at 3pm` | Create a calendar event |
 | `Create all day event called [title] on Saturday` | Create all-day event |
-| `What's on my calendar today?` | View today's events |
+| `Schedule weekly team sync every Monday at 10` | Create a recurring weekly meeting |
+| `Cancel next Monday's team sync` | Cancel one occurrence in a recurring series |
+| `Cancel the entire weekly team sync` | Cancel the whole recurring series |
+| `Add [email] to tomorrow's 3pm meeting` | Add an attendee to an existing event |
+| `Remove [email] from the product review` | Remove an attendee from an event |
+| `Who is attending the meeting at 3pm?` | List attendees for a specific meeting |
+| `Add a Google Meet link to tomorrow's meeting` | Attach a video link (Google Meet) to a meeting |
+| `What is the meeting link for my 3pm call?` | Get the main meeting link for an event |
+| `Remind me 10 minutes before my meeting` | Add a reminder before an upcoming meeting |
+| `Change the reminder for my meeting to 1 hour before` | Update an existing reminder |
+| `Remove reminder from tomorrow's meeting` | Remove one or all reminders from an event |
+| `What's my schedule today?` | View today's agenda (times, titles, links, overlaps) |
 | `Show my meetings tomorrow` | View tomorrow's events |
 | `What events do I have this week?` | View this week's events |
 | `Am I free tomorrow at 4pm?` | Check availability |
@@ -97,6 +108,7 @@ Use this ID to delete:
 The assistant sends a daily summary at 08:00 AM (configurable) with:
 - Today's tasks
 - Recent notes
+- Today's calendar agenda (if calendar is connected)
 
 ---
 
